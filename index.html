@@ -333,6 +333,8 @@ svg text { font-family: var(--font); font-weight: 700; }
 .exact-title { font-family: var(--font-dq); font-size: 18px; font-weight: 700; color: var(--gold); margin-bottom: 10px; }
 .exact-line { display: flex; justify-content: space-between; align-items: baseline; font-size: 24px; font-weight: 700; color: var(--text); padding: 6px 0; }
 .exact-line b { color: var(--green); font-size: 30px; }
+/* 端数を埋める切手（選んだ額面以外）の行は色を変える */
+.exact-line.fill, .exact-line.fill b { color: #ff9f43; }
 .exact-sum { font-size: 19px; font-weight: 700; color: var(--text2); margin-top: 10px; }
 .exact-sum b { color: var(--green); font-size: 28px; }
 .calc-exec-btn {
@@ -1022,7 +1024,7 @@ function execCalc(){
     var cnt = 0;
     parts.forEach(function(p){
       cnt += p[1];
-      h += '<div class="exact-line"><span>'+p[0].toLocaleString()+'円切手</span><span><b>'+p[1]+'</b> 枚</span></div>';
+      h += '<div class="exact-line'+(p[0]===calcDen?'':' fill')+'"><span>'+p[0].toLocaleString()+'円切手</span><span><b>'+p[1]+'</b> 枚</span></div>';
     });
     h += '<div class="exact-sum">合わせて '+cnt+'枚で <b>'+calcTotal.toLocaleString()+'</b> 円になります</div>';
     ex.innerHTML = h;
