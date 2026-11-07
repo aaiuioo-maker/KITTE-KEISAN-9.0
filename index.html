@@ -322,6 +322,19 @@ svg text { font-family: var(--font); font-weight: 700; }
 }
 .calc-np-btn.active { border-color: var(--gold); color: var(--gold); }
 .calc-unit { font-size: 15px; color: var(--text); min-width: 20px; }
+.calc-x-btn {
+  width: 40px; height: 40px; flex: none;
+  background: none; border: 1px solid rgba(255,107,107,0.4); border-radius: 50%;
+  color: var(--red); font-size: 20px; font-weight: 700; line-height: 1; cursor: pointer;
+}
+.calc-x-btn:active { opacity: 0.5; }
+/* ぴったりにする組み合わせ */
+.exact-box { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border2); }
+.exact-title { font-family: var(--font-dq); font-size: 13px; font-weight: 700; color: var(--gold); margin-bottom: 6px; }
+.exact-line { display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; color: var(--text); padding: 4px 0; }
+.exact-line b { color: var(--green); }
+.exact-sum { font-size: 15px; color: var(--text2); margin-top: 6px; }
+.exact-sum b { color: var(--green); font-size: 20px; }
 .calc-exec-btn {
   width: 100%; padding: 13px;
   background: var(--accent); border: none; border-radius: 10px;
@@ -625,16 +638,18 @@ svg text { font-family: var(--font); font-weight: 700; }
         <div class="calc-card-title">★ 金額と切手額面を入力</div>
         <div class="calc-row">
           <div class="calc-row-label">合計金額</div>
-          <div class="calc-np-btn" id="btn-calc-total" onclick="openCalcNp('total')">—</div>
+          <div class="calc-np-btn" id="btn-calc-total" onclick="openCalcNp('total')">0</div>
           <div class="calc-unit">円</div>
+          <button class="calc-x-btn" onclick="clearCalcOne('total')" aria-label="合計金額を0に戻す">×</button>
         </div>
         <div class="inline-np" id="np-calc-total">
           <div class="np-grid" id="npg-calc-total"></div>
         </div>
         <div class="calc-row" style="margin-top:8px;">
           <div class="calc-row-label">切手額面</div>
-          <div class="calc-np-btn" id="btn-calc-den" onclick="openCalcNp('den')">—</div>
+          <div class="calc-np-btn" id="btn-calc-den" onclick="openCalcNp('den')">0</div>
           <div class="calc-unit">円</div>
+          <button class="calc-x-btn" onclick="clearCalcOne('den')" aria-label="切手額面を0に戻す">×</button>
         </div>
         <div class="inline-np" id="np-calc-den">
           <div class="np-grid" id="npg-calc-den"></div>
@@ -660,6 +675,7 @@ svg text { font-family: var(--font); font-weight: 700; }
           <div class="result-unit">円</div>
         </div>
         <div class="result-note" id="result-note"></div>
+        <div class="exact-box-wrap" id="result-exact"></div>
       </div>
     </div>
   </div>
@@ -999,7 +1015,7 @@ function cnok(mode){
 }
 function refreshCalcBtn(mode){
   var confirmed = mode==='total' ? calcTotal : calcDen;
-  var v = calcNpStr[mode] ? String(parseInt(calcNpStr[mode], 10)) : (confirmed ? String(confirmed) : '—');
+  var v = calcNpStr[mode] ? String(parseInt(calcNpStr[mode], 10)) : (confirmed ? String(confirmed) : '0');
   document.getElementById('btn-calc-'+mode).textContent = v;
 }
 
@@ -1019,7 +1035,40 @@ function execCalc(){
     note += '\n目標金額より'+remainder.toLocaleString()+'円多くなります。';
   }
   document.getElementById('result-note').textContent = note;
+  // オーバーしないで、ぴったりにする組み合わせ（選んだ切手をなるべく多く使い、残りをほかの切手で埋める）
+  var ex = document.getElementById('result-exact');
+  if(remainder===0){
+    ex.innerHTML = '';
+  } else {
+    var main = Math.floor(calcTotal / calcDen);
+    var rest = calcTotal - main * calcDen;
+    var parts = [];
+    if(main > 0) parts.push([calcDen, main]);
+    FILL_DENOMS.forEach(function(d){
+      if(d === calcDen) return;
+      var n = Math.floor(rest / d);
+      if(n > 0){ parts.push([d, n]); rest -= d * n; }
+    });
+    var h = '<div class="exact-title">★ オーバーしないで ぴったりにするなら</div>';
+    var cnt = 0;
+    parts.forEach(function(p){
+      cnt += p[1];
+      h += '<div class="exact-line"><span>'+p[0].toLocaleString()+'円切手</span><span><b>'+p[1]+'</b> 枚</span></div>';
+    });
+    h += '<div class="exact-sum">合わせて '+cnt+'枚で <b>'+calcTotal.toLocaleString()+'</b> 円になります</div>';
+    ex.innerHTML = '<div class="exact-box">'+h+'</div>';
+  }
   document.getElementById('result-card').classList.add('show');
+}
+// 端数を埋めるのに使う切手（大きい順）
+var FILL_DENOMS = [500, 100, 50, 20, 10, 5, 2, 1];
+// 合計金額・切手額面を1つだけ 0 に戻す（× ボタン）
+function clearCalcOne(mode){
+  playCancel();
+  if(mode==='total') calcTotal=null; else calcDen=null;
+  document.getElementById('btn-calc-'+mode).className='calc-np-btn';
+  closeCalcNp(mode);
+  document.getElementById('result-card').classList.remove('show');
 }
 
 /* ===== リセット ===== */
