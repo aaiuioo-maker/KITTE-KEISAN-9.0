@@ -659,23 +659,7 @@ svg text { font-family: var(--font); font-weight: 700; }
 
       <!-- 結果 -->
       <div class="result-card" id="result-card">
-        <div class="result-row">
-          <div class="result-label">必要枚数</div>
-          <div class="result-value" id="res-count">0</div>
-          <div class="result-unit">枚</div>
-        </div>
-        <div class="result-row result-remainder">
-          <div class="result-label">端数</div>
-          <div class="result-value" id="res-remainder">0</div>
-          <div class="result-unit">円</div>
-        </div>
-        <div class="result-row">
-          <div class="result-label">切手合計</div>
-          <div class="result-value" id="res-stamp-total">0</div>
-          <div class="result-unit">円</div>
-        </div>
-        <div class="result-note" id="result-note"></div>
-        <div class="exact-box-wrap" id="result-exact"></div>
+        <div id="result-exact"></div>
       </div>
     </div>
   </div>
@@ -1022,24 +1006,9 @@ function refreshCalcBtn(mode){
 function execCalc(){
   if(!calcTotal || !calcDen){ playCancel(); return; }
   playConfirm();
-  var needed = Math.ceil(calcTotal / calcDen);
-  var stampTotal = needed * calcDen;
-  var remainder = stampTotal - calcTotal;
-  document.getElementById('res-count').textContent = needed.toLocaleString();
-  document.getElementById('res-remainder').textContent = remainder.toLocaleString();
-  document.getElementById('res-stamp-total').textContent = stampTotal.toLocaleString();
-  var note = calcDen+'円切手を'+needed+'枚使うと '+stampTotal.toLocaleString()+'円。';
-  if(remainder===0){
-    note += '\nぴったりです！';
-  } else {
-    note += '\n目標金額より'+remainder.toLocaleString()+'円多くなります。';
-  }
-  document.getElementById('result-note').textContent = note;
   // オーバーしないで、ぴったりにする組み合わせ（選んだ切手をなるべく多く使い、残りをほかの切手で埋める）
   var ex = document.getElementById('result-exact');
-  if(remainder===0){
-    ex.innerHTML = '';
-  } else {
+  {
     var main = Math.floor(calcTotal / calcDen);
     var rest = calcTotal - main * calcDen;
     var parts = [];
@@ -1049,14 +1018,14 @@ function execCalc(){
       var n = Math.floor(rest / d);
       if(n > 0){ parts.push([d, n]); rest -= d * n; }
     });
-    var h = '<div class="exact-title">★ オーバーしないで ぴったりにするなら</div>';
+    var h = '<div class="exact-title">★ ぴったり '+calcTotal.toLocaleString()+'円にするなら</div>';
     var cnt = 0;
     parts.forEach(function(p){
       cnt += p[1];
       h += '<div class="exact-line"><span>'+p[0].toLocaleString()+'円切手</span><span><b>'+p[1]+'</b> 枚</span></div>';
     });
     h += '<div class="exact-sum">合わせて '+cnt+'枚で <b>'+calcTotal.toLocaleString()+'</b> 円になります</div>';
-    ex.innerHTML = '<div class="exact-box">'+h+'</div>';
+    ex.innerHTML = h;
   }
   document.getElementById('result-card').classList.add('show');
 }
