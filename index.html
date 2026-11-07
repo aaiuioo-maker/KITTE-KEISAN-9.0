@@ -382,6 +382,27 @@ svg text { font-family: var(--font); font-weight: 700; }
 #ccMovie[hidden] { display: none !important; }
 #ccMovie .ccm-box { width: 100%; max-width: 420px; display: grid; gap: 10px; }
 #ccMovie video { width: 100%; pointer-events: none; aspect-ratio: 1; background: #000; border: 3px double #f8f8f8; border-radius: 6px; }
+/* === 使い方（まお→まい→コハク→中2→るな→花音→桜音 の順番に声で説明。AivisSpeech の7人。訪問先アプリと同じ作り） === */
+.tut-btn { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 1px; background: none; border: 1px solid #d97757; border-radius: 8px; padding: 2px 5px; cursor: pointer; color: #ffd9a8; }
+.tut-btn .ico { font-size: 15px; line-height: 1; }
+.tut-btn .lbl { font-size: 9px; font-weight: 700; line-height: 1; }
+.tut-btn:active { opacity: 0.5; }
+.header-inner h1 { font-size: 15px; text-align: center; }   /* 「使い方」ボタンと重ならないように少し小さく */
+.header-inner .reset-btn { padding: 6px 0 6px 2px; }
+body.tut #app { height: calc(100dvh - 150px - env(safe-area-inset-bottom, 0px)); }   /* 説明の箱の上までにちぢめる */
+.hl { outline: 3px solid #d97757 !important; outline-offset: 3px; border-radius: 10px; box-shadow: 0 0 18px rgba(217,119,87,.6) !important; }
+#tut { position: fixed; left: 0; right: 0; bottom: 0; z-index: 300; display: none; justify-content: center; padding: 0 10px calc(10px + env(safe-area-inset-bottom)); pointer-events: none; }
+body.tut #tut { display: flex; }
+#tut .box { pointer-events: auto; width: 100%; max-width: 430px; background: #1c1c1e; color: #fff; border: 2px solid #d97757; border-radius: 14px; padding: 10px 12px; box-shadow: 0 -4px 20px rgba(0,0,0,.35); font-family: -apple-system, 'Hiragino Sans', sans-serif; }
+#tut .row1 { display: flex; gap: 10px; align-items: center; }
+#tut .who { flex: 0 0 auto; text-align: center; font-size: 11px; font-weight: 700; color: #ffd9a8; }
+#tutFace { display: block; width: 42px; height: 51px; margin: 0 auto 2px; image-rendering: pixelated; }
+#tutCap { flex: 1; font-size: 15px; line-height: 1.55; min-height: 3.1em; }
+#tut .row2 { display: flex; gap: 6px; margin-top: 8px; align-items: center; }
+#tut .row2 button { flex: 1; font-family: inherit; font-size: 13px; font-weight: 700; color: #fff; background: #2c2c2e; border: 1px solid #48484a; border-radius: 8px; padding: 7px 2px; cursor: pointer; }
+#tut .row2 #tutEnd { flex: 0 0 auto; padding: 7px 10px; background: #d97757; border-color: #d97757; }
+#tut .credit { font-size: 10px; color: #8e8e93; margin-top: 4px; text-align: right; }
+#tut .row2 #tutNo { flex: 0 0 auto; font-size: 11px; color: #8e8e93; padding: 0 4px; }
 #ccMovie .ccm-close { padding: 11px; border-radius: 10px; border: none; background: #f8f8f8; color: #0b1120; font: 700 14px -apple-system, "Hiragino Sans", sans-serif; cursor: pointer; }
 </style>
 </head>
@@ -569,6 +590,7 @@ svg text { font-family: var(--font); font-weight: 700; }
         </a>
       </div>
       <h1>★ 切手計算 ★</h1>
+      <button class="tut-btn" id="tutBtn" type="button" aria-label="使い方"><span class="ico">📖</span><span class="lbl">使い方</span></button>
       <button class="reset-btn" onclick="resetAll()">リセット</button>
     </div>
     <!-- タブ -->
@@ -2564,6 +2586,217 @@ window.CC_EXTRA = [...BLOCKS, ...MOBS, ...MC2, ...MC3, ...MC4, ...MC5];
 })();
 </script>
 <!-- 更新した日時（GitHub に反映した日時が自動で出る）。オープニングの「タップして…」の下にだけ小さく出す。オープニングがなければ出さない -->
+<!-- 使い方（7人が順番に声で説明する） -->
+<div id="tut" aria-live="polite">
+  <div class="box">
+    <div class="row1">
+      <div class="who"><canvas id="tutFace" width="56" height="68" aria-hidden="true"></canvas><span id="tutName"></span></div>
+      <div id="tutCap"></div>
+    </div>
+    <div class="row2">
+      <button id="tutPrev" type="button">◀ 前</button>
+      <button id="tutPlay" type="button">⏸ 止める</button>
+      <button id="tutNext" type="button">次 ▶</button>
+      <span id="tutNo"></span>
+      <button id="tutEnd" type="button">✕ おわる</button>
+    </div>
+    <div class="credit">声：AivisSpeech:まお・まい・コハク・中2・るな・花音・桜音</div>
+  </div>
+</div>
+<script>
+// =============================================================
+// 使い方（まお→まい→コハク→中2→るな→花音→桜音 の順番に、声で説明する。AivisSpeech の7人）
+//   上の「📖 使い方」で始まる。説明している所を光らせて、例の数字を自動で入れる
+//   例の数字は説明の間だけ。おわると、始める前の内訳や入力にもどす
+//   見本は訪問先アプリ（aaiuioo-maker/jisen-HOMON1.0）の使い方
+// =============================================================
+(function tutorial() {
+  const $ = id => document.getElementById(id);
+  // 1文字＝1ドット（横14×縦16）。S＝はだ、E＝目
+  const SPK = [
+    { name: 'まお', pal: { H: '#f2a6c0', h: '#ffd0e0', R: '#ffffff', S: '#ffe2cc', E: '#c0507a', W: '#f8f0f4', P: '#e07aa0' }, map: [
+      '.HH..HHHH..HH.', '.HhHHHHHHHHhH.', '.HHHHHHHHHHHH.', 'HHHHHHHHHHHHHH',
+      'HHHSSHSSHSSHHH', 'HHSSSSSSSSSSHH', 'HHSEESSSSEESHH', 'HHSEESSSSEESHH',
+      'HHSSSSSSSSSSHH', 'HH.SSSSSSSS.HH', 'HH..SSSSSS..HH', 'HH.WWWPPWWW.HH',
+      '.H.WWWWWWWW.H.', '...WWWWWWWW...', '...PPPPPPPP...', '...WWWWWWWW...'] },
+    { name: 'まい', pal: { H: '#2a2438', h: '#4a4260', R: '#e04848', S: '#ffe2cc', E: '#6a4a8a', W: '#f4f4f4', N: '#2a3a6a' }, map: [
+      '....HHHHHH.RR.', '..HHHHHHHHHRR.', '.HHHHHhHHHHHH.', '.HHHHHHHHHHHH.',
+      'HHHSSHSSHSSHHH', 'HHSSSSSSSSSSHH', 'HHSEESSSSEESHH', 'HHSEESSSSEESHH',
+      'HHSSSSSSSSSSHH', 'HH.SSSSSSSS.HH', 'HH..SSSSSS..HH', 'HH.NWWRRWWN.HH',
+      'HH.NNWWWWNN.HH', 'HH.NNNNNNNN.HH', '...NNNNNNNN...', '...NNNNNNNN...'] },
+    { name: 'コハク', pal: { H: '#e8a840', h: '#ffd070', S: '#ffe2cc', E: '#c07a20', W: '#f8f4ec', G: '#d08a30', B: '#7a5a3a' }, map: [
+      '....HHHHHH....', '..HHHHhHHHHH..', '.HHHHHHHHHHHH.', 'HHHHHHHHHHHHHH',
+      'HHHSSHSSHSSHHH', 'HHSSSSSSSSSSHH', 'HHSEESSSSEESHH', 'HHSEESSSSEESHH',
+      'HHSSSSSSSSSSHH', 'HH.SSSSSSSS.HH', '.H..SSSSSS..H.', '...WWWGGWWW...',
+      '..BWWWWWWWWB..', '..BWWWWWWWWB..', '..BBWWWWWWBB..', '..BBWWWWWWBB..'] },
+    { name: '中2', pal: { H: '#1e1a2a', h: '#3a3450', S: '#ffe2cc', E: '#d03030', B: '#101018', R: '#c02a3a', K: '#1a1a24' }, map: [
+      '...HHHHHHHH...', '..HHHHhHHHHH..', '.HHHHHHHHHHHH.', 'HHHHHHHHHHHHHH',
+      'HHHSSHSSHSSHHH', 'HHBBBBSSSSSSHH', 'HHBBBSSSSEESHH', 'HHSBBSSSSEESHH',
+      'HHSSSSSSSSSSHH', 'HH.SSSSSSSS.HH', '.H..SSSSSS..H.', '...KKKRRKKK...',
+      '..KKKKRRKKKK..', '..KKKKKKKKKK..', '..KRKKKKKKRK..', '..KKKKKKKKKK..'] },
+    { name: 'るな', pal: { H: '#c8c0e8', h: '#ece6ff', Y: '#ffd84a', S: '#ffe2cc', E: '#6a5ab0', W: '#f4f2ff', N: '#3a3470' }, map: [
+      '....HHHHHH.YY.', '..HHHHHHHHHY..', '.HHHHhHHHHHYY.', 'HHHHHHHHHHHHHH',
+      'HHHSSHSSHSSHHH', 'HHSSSSSSSSSSHH', 'HHSEESSSSEESHH', 'HHSEESSSSEESHH',
+      'HHSSSSSSSSSSHH', 'HH.SSSSSSSS.HH', 'HH..SSSSSS..HH', 'HH.NNWWWWNN.HH',
+      'HH.NNNYYNNN.HH', '.H.NNNNNNNN.H.', '...NNNNNNNN...', '...NNNNNNNN...'] },
+    { name: '花音', pal: { H: '#f0a050', h: '#ffd090', F: '#ffffff', Y: '#ffd84a', S: '#ffe2cc', E: '#c06a30', W: '#fff8ec', G: '#7ac07a' }, map: [
+      '....HHHHHH.FYF', '..HHHHHHHHHFYF', '.HHHHhHHHHHHF.', 'HHHHHHHHHHHHHH',
+      'HHHSSHSSHSSHHH', 'HHSSSSSSSSSSHH', 'HHSEESSSSEESHH', 'HHSEESSSSEESHH',
+      'HHSSSSSSSSSSHH', 'HH.SSSSSSSS.HH', 'HH..SSSSSS..HH', 'HH.GWWWWWWG.HH',
+      'HH.GGWWWWGG.HH', '.H.GGGGGGGG.H.', '...GGGGGGGG...', '...GGGGGGGG...'] },
+    { name: '桜音', pal: { H: '#f6b8cc', h: '#ffe0ea', F: '#ffffff', P: '#e05a8a', S: '#ffe2cc', E: '#c0507a', W: '#fff4f8', K: '#e88aa8' }, map: [
+      '.FPF.HHHHHH...', '.PFPHHHHHHHH..', '.FPFHHhHHHHHH.', 'HHHHHHHHHHHHHH',
+      'HHHSSHSSHSSHHH', 'HHSSSSSSSSSSHH', 'HHSEESSSSEESHH', 'HHSEESSSSEESHH',
+      'HHSSSSSSSSSSHH', 'HH.SSSSSSSS.HH', 'HH..SSSSSS..HH', 'HH.WWWKKWWW.HH',
+      'HH.WWWWWWWW.HH', '.H.KKKKKKKK.H.', '...WWWWWWWW...', '...KKKKKKKK...'] },
+  ];
+  const q = sel => () => document.querySelector(sel);
+  // タブを音なしで切りかえる
+  function tab(t) {
+    closeNp('den'); closeNp('cnt'); closeCalcNp('total'); closeCalcNp('den');
+    ['count', 'need'].forEach(n => {
+      $('tab-' + n).classList.toggle('active', n === t);
+      $('pane-' + n).classList.toggle('active', n === t);
+    });
+  }
+  // 枚数カウントの入力欄に例の数字を入れる
+  function setCount(den, cnt) {
+    inputDen = den; inputCnt = cnt;
+    $('btn-den').className = 'np-show-btn' + (den ? ' active-den' : '');
+    $('btn-cnt').className = 'np-show-btn' + (cnt ? ' active-cnt' : '');
+    refreshBtn('den'); refreshBtn('cnt');
+  }
+  // 内訳を例の切手にする（画面に出すだけ）
+  function setStamps(list) { stamps = list.map(s => ({ den: s[0], count: s[1] })); render(); }
+  // 必要枚数計算に例の数字を入れる（go が true なら計算もする）
+  function setCalc(total, den, go) {
+    calcTotal = total; calcDen = den;
+    ['total', 'den'].forEach(m => { $('btn-calc-' + m).className = 'calc-np-btn' + ((m === 'total' ? total : den) ? ' active' : ''); refreshCalcBtn(m); });
+    $('result-card').classList.remove('show');
+    if (go) { execCalc(); }
+  }
+  // [字幕, 光らせる所（関数）, その場面でする操作]。i 番目は SPK[i % SPK.length] が読む（7人で順番に）
+  // 声は koe-tut/番号.mp3（AivisSpeech で作ったもの）。読めなかったときは 端末の声で読む
+  //   字幕を変えたら声も作り直すこと（KOE_V を1つ上げる）
+  const KOE_V = 1;
+  const STEPS = [
+    ['こんにちは。切手計算の使い方を説明します。', null, () => { tab('count'); setStamps([]); setCount(null, null); }],
+    ['「枚数カウント」では、手もとの切手が全部でいくらになるかを計算します。', () => $('tab-count'), () => { tab('count'); setStamps([]); setCount(null, null); }],
+    ['「額面」を押すと、数字のボタンが出ます。切手の金額を入れて「確定」を押します。', () => $('btn-den'), () => { tab('count'); setStamps([]); setCount(84, null); }],
+    ['「枚数」も同じように入れます。', () => $('btn-cnt'), () => { tab('count'); setStamps([]); setCount(84, 10); }],
+    ['「追加する」を押すと、下の内訳に並びます。', q('.add-btn'), () => { tab('count'); setCount(null, null); setStamps([[84, 10]]); }],
+    ['ほかの切手も、続けて足していけます。いちばん下に、合計金額と枚数が出ます。', q('.total-pin'), () => { tab('count'); setCount(null, null); setStamps([[10, 3], [84, 10]]); }],
+    ['内訳の右の「✕」で一行ずつ消せます。「クリア」を押すと全部消えます。', () => $('breakdown-list'), () => { tab('count'); setCount(null, null); setStamps([[10, 3], [84, 10]]); }],
+    ['「必要枚数計算」では、払いたい金額を、どの切手で何枚はればいいかを計算します。', () => $('tab-need'), () => { tab('need'); setCalc(null, null); }],
+    ['合計金額と、使いたい切手の額面を入れて、「計算する」を押します。', q('.calc-exec-btn'), () => { tab('need'); setCalc(420, 50); }],
+    ['選んだ切手だけで足りない分は、ほかの切手でうめて、ぴったりになる組み合わせを出します。', () => $('result-card'), () => { tab('need'); setCalc(420, 50, true); }],
+    ['金額の右の「✕」を押すと、その数字を0にもどせます。', q('.calc-x-btn'), () => { tab('need'); setCalc(420, 50, true); }],
+    ['左上のキャラクターをタップすると、自己紹介をしてくれます。', q('.cc-wrap'), () => tab('count')],
+    ['説明は以上です。ご利用ありがとうございました。', null, () => tab('count')],
+  ];
+
+  let ac = null;   // Web Audio（iPhone の消音スイッチが入っていても鳴るように）
+  function initAudio() {
+    try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) {}
+  }
+  const koe = [];   // 声（デコード済み）。読めなかったときは端末の声で読む
+  function loadKoe() {
+    if (koe.length) return;
+    STEPS.forEach((st, i) => koe[i] = !KOE_V || !ac ? Promise.resolve(null) :
+      fetch('koe-tut/' + String(i).padStart(2, '0') + '.mp3?v=' + KOE_V)
+        .then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)
+        .then(ab => ab && new Promise(res => { try { ac.decodeAudioData(ab, b => res(b), () => res(null)); } catch (e) { res(null); } })));
+  }
+  // 端末の声は 7人で 高さを少しずつ変えて、だれが話しているか分かるようにする
+  const PITCH = [1.2, 1.35, 1.05, 1.15, 1.45, 1.25, 1.4];
+  let tutOn = false, tutI = 0, tutPlaying = false, tutToken = null, tutSrc = null, talking = false, saved = null;
+  function stopVoice() {
+    tutToken = null; talking = false;
+    if (tutSrc) { try { tutSrc.onended = null; tutSrc.stop(); } catch (e) {} tutSrc = null; }
+    try { speechSynthesis.cancel(); } catch (e) {}
+  }
+  function showStep(i) {
+    tutI = i;
+    const st = STEPS[i], sp = SPK[i % SPK.length];
+    $('tutCap').textContent = st[0];
+    $('tutName').textContent = sp.name;
+    $('tutNo').textContent = (i + 1) + '/' + STEPS.length;
+    document.querySelectorAll('.hl').forEach(e => e.classList.remove('hl'));
+    if (st[2]) st[2]();
+    const el = st[1] && st[1]();
+    if (el) { el.classList.add('hl'); el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+  }
+  function playStep(i) {
+    stopVoice(); showStep(i);
+    if (!tutPlaying) return;
+    const token = tutToken = {};
+    const next = () => { if (tutToken !== token) return; talking = false;
+      setTimeout(() => { if (tutToken !== token) return; if (tutI < STEPS.length - 1) playStep(tutI + 1); else { tutPlaying = false; showPlay(); } }, 700); };
+    talking = true;
+    koe[i].then(b => {
+      if (tutToken !== token) return;
+      if (b) {
+        initAudio();
+        const s = ac.createBufferSource(); s.buffer = b; s.connect(ac.destination);
+        s.onended = next; tutSrc = s; s.start();
+      } else {
+        try {
+          const u = new SpeechSynthesisUtterance(STEPS[i][0].replace(/[「」]/g, ''));
+          u.lang = 'ja-JP'; u.pitch = PITCH[i % PITCH.length]; u.onend = next; u.onerror = next; speechSynthesis.speak(u);
+        } catch (e) { setTimeout(next, 3500); }
+      }
+    });
+  }
+  function showPlay() { $('tutPlay').textContent = tutPlaying ? '⏸ 止める' : '▶ 聞く'; }
+  function startTut() {
+    if (tutOn) return;
+    initAudio(); playTick(); loadKoe();
+    // いまの内訳・入力・タブを覚えておく（おわったら もどす）
+    saved = { stamps: stamps.map(s => ({ den: s.den, count: s.count })), den: inputDen, cnt: inputCnt,
+      total: calcTotal, cden: calcDen, shown: $('result-card').classList.contains('show'),
+      tab: $('tab-need').classList.contains('active') ? 'need' : 'count' };
+    tutOn = true; tutPlaying = true; document.body.classList.add('tut'); showPlay();
+    playStep(0);
+  }
+  function endTut() {
+    stopVoice(); tutOn = false; tutPlaying = false;
+    document.body.classList.remove('tut');
+    document.querySelectorAll('.hl').forEach(e => e.classList.remove('hl'));
+    if (saved) {
+      stamps = saved.stamps; render();
+      setCount(saved.den, saved.cnt);
+      setCalc(saved.total, saved.cden, saved.shown);
+      tab(saved.tab);
+    }
+  }
+  $('tutBtn').onclick = startTut;
+  $('tutEnd').onclick = endTut;
+  $('tutPlay').onclick = () => { initAudio(); tutPlaying = !tutPlaying; showPlay(); if (tutPlaying) playStep(tutI); else stopVoice(); };
+  $('tutPrev').onclick = () => { if (tutI > 0) { tutPlaying ? playStep(tutI - 1) : showStep(tutI - 1); } };
+  $('tutNext').onclick = () => { if (tutI < STEPS.length - 1) { tutPlaying ? playStep(tutI + 1) : showStep(tutI + 1); } };
+  // 読んでいる人の顔（しゃべっている間は口がパクパク・体がはずむ）
+  (function face() {
+    const c = $('tutFace'), g = c.getContext('2d'), k = 4;
+    const P = (x, y, col) => { g.fillStyle = col; g.fillRect(x * k, y * k, k, k); };
+    function draw(now) {
+      requestAnimationFrame(draw);
+      if (!tutOn) return;
+      const t = now / 1000, sp = SPK[tutI % SPK.length];
+      const bob = talking && Math.floor(t * 4) % 2 ? -1 : 0, blink = (t % 3.2) > 3.05;
+      g.clearRect(0, 0, c.width, c.height);
+      sp.map.forEach((row, y) => [...row].forEach((ch, x) => {
+        if (ch === '.') return;
+        if (ch === 'E' && blink) { if (y === 7) P(x, y + bob + 1, '#5a3a3a'); return; }
+        P(x, y + bob + 1, sp.pal[ch]);
+      }));
+      const open = talking && Math.floor(t * 9) % 3 !== 0;
+      if (open) { P(6, 10 + bob, '#8a2a3a'); P(7, 10 + bob, '#8a2a3a'); P(6, 11 + bob, '#e07080'); P(7, 11 + bob, '#8a2a3a'); }
+      else { P(6, 10 + bob, '#c0505a'); P(7, 10 + bob, '#c0505a'); }
+    }
+    requestAnimationFrame(draw);
+  })();
+})();
+</script>
 <script>(function(){var d=new Date(document.lastModified);if(isNaN(d)||Math.abs(Date.now()-d)<5000)return;function p(n){return('0'+n).slice(-2);}
 var e=document.createElement('div');e.id='appVer';e.textContent='更新 '+d.getFullYear()+'/'+p(d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
 e.style.cssText='display:block;width:100%;text-align:center;font:11px/1.4 sans-serif;color:inherit;opacity:.6;margin-top:8px;pointer-events:none;';
