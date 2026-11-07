@@ -787,6 +787,18 @@ function openingTap(){
   setTimeout(function(){ op.style.display='none'; document.body.style.background='#2a2a2a'; document.getElementById('app').classList.add('visible'); },600);
 }
 
+/* ===== オープニングのスイッチ =====
+   OPENING_ON = false のあいだはオープニングを出さず、すぐに計算の画面を出す。
+   オープニングの中身（ヒソカの場面・音・セリフ）は消さずに残してあるので、
+   復活させるときは true にするだけでよい。 */
+var OPENING_ON = false;
+if(!OPENING_ON){
+  openingTapped = true;
+  document.getElementById('opening').style.display = 'none';
+  document.body.style.background = '#2a2a2a';
+  document.getElementById('app').classList.add('visible');
+}
+
 /* ===== STATE ===== */
 var stamps = [];
 var npStr = { den: '', cnt: '' };
